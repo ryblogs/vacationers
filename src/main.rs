@@ -1,6 +1,8 @@
 use std::env;
-extern crate chrono;
+use std::io::{stdout, Write};
+use arboard::Clipboard;
 use chrono::NaiveDate;
+use termion::terminal_size;
 
 struct VacationPeriod {
     start_date: String,
@@ -11,6 +13,17 @@ fn format_date(datestamp: &str) -> String {
     let parsed_date = NaiveDate::parse_from_str(datestamp, "%Y-%m-%d").unwrap();
     let formatted_date = parsed_date.format("%A, %-m/%-d").to_string();
     formatted_date
+}
+
+fn print_hline() {
+    let (width, _) = terminal_size().unwrap();
+    let line = "━".repeat(width as usize);
+
+    let stdout = stdout();
+    let mut handle = stdout.lock();
+
+    handle.write_all(line.as_bytes()).unwrap();
+    handle.flush().unwrap();
 }
 
 fn main() {
@@ -51,14 +64,39 @@ fn main() {
         vacation_periods.push(period);
     }
 
-    println!("Subject: Upcoming vacation days\n");
-    println!("Hello,\n\nI plan to take the following day(s) as vacation:");
+    // println!("Subject: Upcoming vacation days\n");
+    // println!("Hello,\n\nI plan to take the following day(s) as vacation:");
+    // for period in vacation_periods {
+    //     if period.start_date == period.stop_date {
+    //         println!("     {}", period.start_date);
+    //     } else {
+    //         println!("     {} - {}", period.start_date, period.stop_date);
+    //     }
+    // }
+    // println!("\nThank you,\nRyan");
+
+    let day_str;
+    print_hline();
+    if (args.len() == 2) && (args[0] == args[1]) {
+        day_str = "day".to_string();
+    } else {
+        day_str = "days".to_string();
+    }
+    println!("Subject: Upcoming vacation {day_str}");
+    print_hline();
+    let mut message = String::new();
+    message += &format!("Hello,\n\nI plan to take the following {day_str} as vacation:\n");
     for period in vacation_periods {
         if period.start_date == period.stop_date {
-            println!("     {}", period.start_date);
+            message += &format!("     {}\n", period.start_date);
         } else {
-            println!("     {} - {}", period.start_date, period.stop_date);
+            message += &format!("     {} - {}\n", period.start_date, period.stop_date);
         }
     }
-    println!("\nThank you,\nRyan");
+    message += &format!("\nThank you,\nRyan");
+    println!("{}", message);
+    print_hline();
+
+    let mut clipboard = Clipboard::new().unwrap();
+    clipboard.set_text(message).unwrap();
 }
